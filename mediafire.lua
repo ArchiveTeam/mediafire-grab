@@ -59,7 +59,7 @@ allowed = function(url, parenturl)
   end
 
   for s in string.gmatch(url, "[0-9a-zA-Z_%.]+") do
-    if ids[s] then
+    if ids[s] or ids[string.sub(s, 1, #s-2)] then
       return true
     end
   end
@@ -161,6 +161,15 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     return json[s]
   end
 
+  if status_code < 400 and allowed(url, nil) then
+    local a, b = string.match(url, "^(https?://[^/]+/convkey/.+)[0-9](g%.jpg)$")
+    if a and b then
+      for i = 0, 9 do
+        check(a .. tostring(i) .. b)
+      end
+    end
+  end
+
   if allowed(url, nil) and status_code == 200
     and not string.match(url, "^https?://download[0-9]*%.mediafire%.com/") then
     html = read_file(file)
@@ -190,7 +199,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check("https://www.mediafire.com/?" .. match)
       if sort == "folder" then
         check("https://www.mediafire.com/folder/" .. match)
-        check("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. match .. "&response_format=json")
+        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
+        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
         check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=folders&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
         check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
       elseif sort == "file" then
@@ -201,8 +211,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         check("https://www.mediafire.com/download/" .. match)
         check("https://www.mediafire.com/download.php?" .. match)
         check("https://www.mediafire.com/imageview.php?quickkey=" .. match) -- &thumb=
-        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
-        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
+        check("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. match .. "&response_format=json")
       end
     end
 
