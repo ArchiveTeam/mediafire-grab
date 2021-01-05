@@ -58,7 +58,7 @@ allowed = function(url, parenturl)
     tested[s] = tested[s] + 1
   end
 
-  for s in string.gmatch(url, "[0-9a-zA-Z_%.]+") do
+  for s in string.gmatch(url, "[0-9a-zA-Z]+") do
     if ids[s] or ids[string.sub(s, 1, #s-2)] then
       return true
     end
@@ -171,7 +171,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   end
 
   if allowed(url, nil) and status_code == 200
-    and not string.match(url, "^https?://download[0-9]*%.mediafire%.com/") then
+    and not string.match(url, "^https?://download[0-9]*%.mediafire%.com/")
+    and not string.match(url, "^https?://[^/]*mediafire%.com/convkey/") then
     html = read_file(file)
     if string.match(url, "^https?://[^/]*mediafire%.com/api/.+&response_format=") then
       check(string.gsub(url, "(&response_format=)[a-z]+", "%1json"))
@@ -287,7 +288,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. "  \n")
   io.stdout:flush()
 
-  local match = string.match(url["url"], "^https?://[^/]*mediafire%.com/api/1%.[45]/[^/]+/get_info%.php%?.+_key=([0-9a-zA-Z_%.]+)")
+  local match = string.match(url["url"], "^https?://[^/]*mediafire%.com/api/1%.[45]/[^/]+/get_info%.php%?.+_key=([0-9a-zA-Z]+)")
   if match then
     ids[match] = true
   end
