@@ -64,6 +64,10 @@ allowed = function(url, parenturl)
     end
   end
 
+  if string.match(url, "^https?://[^/]*mediafire%.com/convkey/") then
+    return true
+  end
+
   return false
 end
 
@@ -191,10 +195,23 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
       elseif sort == "file" then
         check("https://www.mediafire.com/file/" .. match)
+        check("https://www.mediafire.com/view/" .. match)
+        check("https://www.mediafire.com/listen/" .. match)
+        check("https://www.mediafire.com/watch/" .. match)
         check("https://www.mediafire.com/download/" .. match)
+        check("https://www.mediafire.com/download.php?" .. match)
+        check("https://www.mediafire.com/imageview.php?quickkey=" .. match) -- &thumb=
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
       end
+    end
+
+    if string.match(url, "^https?://[^/]*/file/")
+      and string.match(url, "/file$") then
+      check(string.match(url, "^(.+)/file$"))
+      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1listen%2"))
+      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1view%2"))
+      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1watch%2"))
     end
 
     if string.match(url, "/folder/get_content%.php")
