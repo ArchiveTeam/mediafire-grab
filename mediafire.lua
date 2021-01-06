@@ -16,6 +16,7 @@ local addedtolist = {}
 local abortgrab = false
 
 local discovered = {}
+local forced_allowed = {}
 
 if urlparse == nil or http == nil then
   io.stdout:write("socket not corrently installed.\n")
@@ -45,6 +46,10 @@ allowed = function(url, parenturl)
     or string.match(url, "^https?://[^/]+/download_repair%.php")
     or string.match(url, "^https?://[^/]*facebook%.com/") then
     return false
+  end
+
+  if forced_allowed[url] then
+    return true
   end
 
   local tested = {}
@@ -141,17 +146,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
 
-  local function eval_sum(s)
-    if string.match(s, '%+') then
-      total = 0
-      for i in string.gmatch(s, "([0-9]+)") do
-        total = total + tonumber(i)
-      end
-      return tostring(total)
-    end
-    return s
-  end
-
   local function json_get(json, s)
     if not json[s] then
       io.stdout:write("Could not find data in table.\n")
@@ -162,10 +156,31 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   end
 
   if status_code < 400 and allowed(url, nil) then
-    local a, b = string.match(url, "^(https?://[^/]+/convkey/.+)[0-9](g%.jpg)$")
+    local a, b = string.match(url, "^(https?://[^/]+/convkey/.+)[0-9a-z](g%.jpg)$")
     if a and b then
       for i = 0, 9 do
         check(a .. tostring(i) .. b)
+      end
+      for i = 97, 122 do
+        check(a .. string.char(i) .. b)
+      end
+    end
+    if (string.match(url, "^https?://www%.mediafire%.com/")
+      or string.match(url, "^https?://mediafire%.com/"))
+      and not string.match(url, "^https?://[^/]+/api/")
+      and not string.match(url, "^https?://[^/]+/convkey/")
+      and not string.match(url, "^https?://[^/]+/widgets/") then
+      check(string.gsub(url, "^(https?://)[^/]+(/.+)$", "%1mfi.re%2"))
+    end
+  end
+
+  if status_code >= 400 and status_code < 500 then
+    local a, b = string.match(url, "^https?://www%.mediafire%.com/api/1%.5/([^/]+)/get_info%.php%?.+_key=([0-9a-zA-Z]+)")
+    if a and b then
+      if a == "file" then
+        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. b .. "&response_format=json")
+      elseif a == "folder" then
+        check("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. b .. "&response_format=json")
       end
     end
   end
@@ -180,13 +195,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check(string.gsub(url, "&response_format=[a-z]+", ""))
     end
 
-    if (string.match(url, "^https?://www%.mediafire%.com/")
-      or string.match(url, "^https?://mediafire%.com/"))
-      and not string.match(url, "^https?://[^/]+/api/") then
-      check(string.gsub(url, "^(https?://)[^/]+(/.+)$", "%1mfi.re%2"))
-    end
-
-    if string.match(url, "^https?://[^/]*mediafire%.com/api/1%.[0-9]+/") then
+    if string.match(url, "^https?://[^/]*mediafire%.com/api/1%.[0-9]+/.+%?") then
 --[[      check(string.gsub(url, "(/api/1%.)[0-9]+", "%10"))
       check(string.gsub(url, "(/api/1%.)[0-9]+", "%11"))
       check(string.gsub(url, "(/api/1%.)[0-9]+", "%12"))
@@ -198,22 +207,32 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     local sort, match = string.match(url, "^https?://[^/]*mediafire%.com/api/1%.[0-9]+/([^/]+)/get_info%.php%?.+_key=([0-9a-zA-Z_%.]+)")
     if match then
       check("https://www.mediafire.com/?" .. match)
+      check("https://www.mediafire.com/i/?" .. match)
       if sort == "folder" then
         check("https://www.mediafire.com/folder/" .. match)
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
+        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&details=yes")
         check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=folders&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
         check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
       elseif sort == "file" then
         check("https://www.mediafire.com/file/" .. match)
         check("https://www.mediafire.com/view/" .. match)
+        check("https://www.mediafire.com/play/" .. match)
         check("https://www.mediafire.com/listen/" .. match)
         check("https://www.mediafire.com/watch/" .. match)
         check("https://www.mediafire.com/download/" .. match)
         check("https://www.mediafire.com/download.php?" .. match)
         check("https://www.mediafire.com/imageview.php?quickkey=" .. match) -- &thumb=
         check("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. match .. "&response_format=json")
+        check("https://www.mediafire.com/api/1.5/file/get_links.php?quick_key=" .. match .. "&response_format=json")
       end
+    end
+
+    local a, b = string.match(url, "^(https?://[^/]*mediafire%.com/api/.+%.php)%?(.+)$")
+    if a and b then
+      forced_allowed[a] = true
+      table.insert(urls, { url=a, post_data=b })
     end
 
     if string.match(url, "^https?://[^/]*/file/")
@@ -224,37 +243,69 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1watch%2"))
     end
 
-    if string.match(url, "/folder/get_content%.php")
-      and string.match(url, "[%?&]response_format=json") then
-      local json = JSON:decode(html)
-      json = json_get(json, "response")
-      if json["result"] ~= "Success" then
+    if string.match(url, "^https?://[^/]+/api/1%.[0-9]/.")
+      and not string.match(url, "[%?&]response_format=json") then
+      if not string.match(html, "<result>Success</result>")
+        and not string.match(html, '"result":"Success"') then
         io.stdout:write("API request not succesful.\n")
         io.stdout:flush()
         abortgrab = true
         return urls
       end
-      json = json_get(json, "folder_content")
-      local sort = string.match(url, "[%?&]content_type=([a-z]+)")
-      if not sort then
-        io.stdout:write("Could not determine sort.\n")
+    end
+
+    if string.match(url, "^https?://[^/]+/api/1%.[0-9]/.")
+      and string.match(html, "^{") then
+      local json = JSON:decode(html)
+      if not json then
+        io.stdout:write("Invalid JSON response.\n")
         io.stdout:flush()
         abortgrab = true
-        return urls
       end
-      local keyname = nil
-      if sort == "files" then
-        keyname = "quickkey"
-      elseif sort == "folders" then
-        keyname = "folderkey"
-      else
-        io.stdout:write("Sort unsupported.\n")
-        io.stdout:flush()
-        abortgrab = true
-        return urls
+
+      json = json_get(json, "response")
+      match = string.match(url, "/folder/get_info%..+[%?&]folder_key=([0-9a-zA-Z]+)")
+      if match then
+        j = json_get(json, "folder_info")
+        if j["name"] then
+          local name = string.gsub(j["name"], " ", "_")
+          check("https://www.mediafire.com/?" .. match .. "/" .. name)
+          check("https://www.mediafire.com/folder/" .. match .. "/" .. name)
+        end
       end
-      for _, d in pairs(json_get(json, sort)) do
-        discovered["id:" .. json_get(d, keyname)] = true
+
+      if string.match(url, "/folder/get_content.+[%?&]chunk=[0-9]+.*&response_format=json") then
+        j = json_get(json, "folder_content")
+        if j["more_chunks"] and j["more_chunks"] == "yes" then
+          local chunk = string.match(url, "[%?&]chunk=([0-9]+)")
+          check(string.gsub(url, "([%?&]chunk=)[0-9]+", "%1" .. tostring(tonumber(chunk)+1)))
+        end
+      end
+
+      if string.match(url, "/folder/get_content%.php")
+        and string.match(url, "[%?&]response_format=json") then
+        j = json_get(json, "folder_content")
+        local sort = string.match(url, "[%?&]content_type=([a-z]+)")
+        if not sort then
+          io.stdout:write("Could not determine sort.\n")
+          io.stdout:flush()
+          abortgrab = true
+          return urls
+        end
+        local keyname = nil
+        if sort == "files" then
+          keyname = "quickkey"
+        elseif sort == "folders" then
+          keyname = "folderkey"
+        else
+          io.stdout:write("Sort unsupported.\n")
+          io.stdout:flush()
+          abortgrab = true
+          return urls
+        end
+        for _, d in pairs(json_get(j, sort)) do
+          discovered["id:" .. json_get(d, keyname)] = true
+        end
       end
     end
 
