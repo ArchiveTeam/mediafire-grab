@@ -42,8 +42,7 @@ read_file = function(file)
 end
 
 allowed = function(url, parenturl)
-  if string.match(urlparse.unescape(url), "[<>\\%*%$%^%[%],%(%){}]")
-    or string.match(url, "^https?://[^/]+/download_repair%.php")
+  if string.match(url, "^https?://[^/]+/download_repair%.php")
     or string.match(url, "^https?://[^/]*facebook%.com/") then
     return false
   end
