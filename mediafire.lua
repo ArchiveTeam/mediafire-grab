@@ -209,6 +209,12 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check("https://www.mediafire.com/?" .. match)
       check("https://www.mediafire.com/i/?" .. match)
       if sort == "folder" then
+        if true then
+          io.stdout:write("Folder are not supported at this time.\n")
+          io.stdout:flush()
+          abortgrab = true
+          return {}
+        end
         check("https://www.mediafire.com/folder/" .. match)
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")

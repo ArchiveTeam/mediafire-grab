@@ -52,7 +52,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20210105.02'
+VERSION = '20210113.01'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'trackerproxy.archiveteam.org'
@@ -160,6 +160,7 @@ class WgetArgs(object):
             WGET_AT,
             '-U', USER_AGENT,
             '-nv',
+            '--no-cookies',
             '--content-on-error',
             '--lua-script', 'mediafire.lua',
             '-o', ItemInterpolation('%(item_dir)s/wget.log'),
@@ -191,7 +192,6 @@ class WgetArgs(object):
 
         if item_type == 'id':
             wget_args.extend(['--warc-header', 'mediafire-id: ' + item_value])
-            wget_args.append('https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key={}&response_format=json'.format(item_value))
             wget_args.append('https://www.mediafire.com/api/1.5/file/get_info.php?quick_key={}&response_format=json'.format(item_value))
         else:
             raise ValueError('item_type not supported.')
