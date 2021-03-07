@@ -38,7 +38,8 @@ WGET_AT = find_executable(
     'Wget+AT',
     [
         'GNU Wget 1.20.3-at.20200919.01',
-        'GNU Wget 1.20.3-at.20201030.01'
+        'GNU Wget 1.20.3-at.20201030.01',
+        'GNU Wget 1.20.3-at.20210212.02'
     ],
     [
          './wget-at',
