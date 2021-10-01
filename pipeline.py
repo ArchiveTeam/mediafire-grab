@@ -39,7 +39,9 @@ WGET_AT = find_executable(
     [
         'GNU Wget 1.20.3-at.20211001.01'
     ],
-    ['./wget-at']
+        './wget-at',
+        '/home/warrior/data/wget-at'
+    ]
 )
 
 if not WGET_AT:
@@ -54,7 +56,7 @@ if not WGET_AT:
 VERSION = '20211001.01'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
-TRACKER_HOST = 'trackerproxy.archiveteam.org'
+TRACKER_HOST = 'legacy-api.arpa.li'
 
 
 ###########################################################################
