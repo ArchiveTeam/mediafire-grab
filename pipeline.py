@@ -39,6 +39,7 @@ WGET_AT = find_executable(
     [
         'GNU Wget 1.20.3-at.20211001.01'
     ],
+    [
         './wget-at',
         '/home/warrior/data/wget-at'
     ]
@@ -53,7 +54,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20211001.01'
+VERSION = '20211016.01'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'legacy-api.arpa.li'
