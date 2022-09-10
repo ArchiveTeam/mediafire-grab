@@ -37,7 +37,7 @@ if StrictVersion(seesaw.__version__) < StrictVersion('0.8.5'):
 WGET_AT = find_executable(
     'Wget+AT',
     [
-        'GNU Wget 1.20.3-at.20211001.01'
+        'GNU Wget 1.21.3-at.20220608.02'
     ],
     [
         './wget-at',
@@ -54,10 +54,11 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20211016.01'
+VERSION = '20220911.01'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'legacy-api.arpa.li'
+MULTI_ITEM_SIZE = 40
 
 
 ###########################################################################
@@ -222,8 +223,9 @@ project = Project(
 
 pipeline = Pipeline(
     CheckIP(),
-    GetItemFromTracker('http://%s/%s' % (TRACKER_HOST, TRACKER_ID), downloader,
-        VERSION),
+    GetItemFromTracker('https://{}/{}/multi={}/'
+        .format(TRACKER_HOST, TRACKER_ID, MULTI_ITEM_SIZE),
+        downloader, VERSION),
     PrepareDirectories(warc_prefix='mediafire'),
     WgetDownload(
         WgetArgs(),
