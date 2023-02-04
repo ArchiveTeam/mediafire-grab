@@ -176,6 +176,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   if status_code >= 400 and status_code < 500 then
     local a, b = string.match(url, "^https?://www%.mediafire%.com/api/1%.5/([^/]+)/get_info%.php%?.+_key=([0-9a-zA-Z]+)")
     if a and b then
+      if try_one_failed then
+        abortgrab = true
+      end
+      try_one_failed = true
       if a == "file" then
         check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. b .. "&response_format=json")
       elseif a == "folder" then
