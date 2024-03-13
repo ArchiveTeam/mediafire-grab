@@ -1,8 +1,6 @@
-dofile("table_show.lua")
-dofile("urlcode.lua")
 local urlparse = require("socket.url")
 local http = require("socket.http")
-JSON = assert(loadfile "JSON.lua")()
+local cjson = require("cjson")
 
 local item_value = os.getenv('item_value')
 local item_type = os.getenv('item_type')
@@ -25,10 +23,6 @@ if urlparse == nil or http == nil then
 end
 
 local ids = {}
-
-for ignore in io.open("ignore-list", "r"):lines() do
-  downloaded[ignore] = true
-end
 
 read_file = function(file)
   if file then
@@ -164,8 +158,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         check(a .. string.char(i) .. b)
       end
     end
-    if (string.match(url, "^https?://www%.mediafire%.com/")
-      or string.match(url, "^https?://mediafire%.com/"))
+    if (
+        string.match(url, "^https?://www%.mediafire%.com/")
+        or string.match(url, "^https?://mediafire%.com/")
+      )
       and not string.match(url, "^https?://[^/]+/api/")
       and not string.match(url, "^https?://[^/]+/convkey/")
       and not string.match(url, "^https?://[^/]+/widgets/") then
@@ -187,69 +183,97 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       end
     end
   end
+  
+  local function check_url_api(newurl, post_data)
+    if type(post_data) ~= "string" then
+      post_data = nil
+    end
+    if post_data ~= nil then
+      table.insert(urls, {url=newurl, post_data=post_data})
+    else
+      check(newurl)
+    end
+    for _, replace_with in pairs({"/api/1%.5/", "/api/1%.4/"}) do
+      local otherurl = string.gsub(newurl, "/api/1%.[45]/", replace_with)
+      if otherurl ~= newurl then
+        if post_data ~= nil then
+          table.insert(urls, {url=otherurl, post_data=post_data})
+        else
+          check(newurl)
+        end
+      end
+    end
+  end
 
   if allowed(url, nil) and status_code == 200
     and not string.match(url, "^https?://download[0-9]*%.mediafire%.com/")
     and not string.match(url, "^https?://[^/]*mediafire%.com/convkey/") then
     html = read_file(file)
+    local json = nil
+    
+    if string.match(url, "json$") or string.match(html, "^{") then
+      json = cjson.decode(html)
+      assert(json["response"]["result"] == "Success")
+    end
+    
     if string.match(url, "^https?://[^/]*mediafire%.com/api/.+&response_format=") then
-      check(string.gsub(url, "(&response_format=)[a-z]+", "%1json"))
-      check(string.gsub(url, "(&response_format=)[a-z]+", "%1xml"))
-      check(string.gsub(url, "&response_format=[a-z]+", ""))
+      check_url_api(string.gsub(url, "(&response_format=)[a-z]+", "%1json"))
+      check_url_api(string.gsub(url, "(&response_format=)[a-z]+", "%1xml"))
+      check_url_api(string.gsub(url, "&response_format=[a-z]+", ""))
     end
 
     if string.match(url, "^https?://[^/]*mediafire%.com/api/1%.[0-9]+/.+%?") then
---[[      check(string.gsub(url, "(/api/1%.)[0-9]+", "%10"))
-      check(string.gsub(url, "(/api/1%.)[0-9]+", "%11"))
-      check(string.gsub(url, "(/api/1%.)[0-9]+", "%12"))
-      check(string.gsub(url, "(/api/1%.)[0-9]+", "%13"))]]
-      check(string.gsub(url, "(/api/1%.)[0-9]+", "%14"))
-      check(string.gsub(url, "(/api/1%.)[0-9]+", "%15"))
+--[[      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%10"))
+      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%11"))
+      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%12"))
+      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%13"))]]
+      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%14"))
+      check_url_api(string.gsub(url, "(/api/1%.)[0-9]+", "%15"))
     end
 
     local sort, match = string.match(url, "^https?://[^/]*mediafire%.com/api/1%.[0-9]+/([^/]+)/get_info%.php%?.+_key=([0-9a-zA-Z_%.]+)")
     if match then
-      check("https://www.mediafire.com/?" .. match)
-      check("https://www.mediafire.com/i/?" .. match)
+      check_url_api("https://www.mediafire.com/?" .. match)
+      check_url_api("https://www.mediafire.com/i/?" .. match)
       if sort == "folder" then
-        if true then
+        --[[if true then
           io.stdout:write("Folder are not supported at this time.\n")
           io.stdout:flush()
           abortgrab = true
           return {}
-        end
-        check("https://www.mediafire.com/folder/" .. match)
-        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
-        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
-        check("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&details=yes")
-        check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=folders&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
-        check("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
+        end]]
+        check_url_api("https://www.mediafire.com/folder/" .. match)
+        check_url_api("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json")
+        check_url_api("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&recursive=yes")
+        check_url_api("https://www.mediafire.com/api/1.5/folder/get_info.php?folder_key=" .. match .. "&response_format=json&details=yes")
+        check_url_api("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=folders&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
+        check_url_api("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
       elseif sort == "file" then
-        check("https://www.mediafire.com/file/" .. match)
-        check("https://www.mediafire.com/view/" .. match)
-        check("https://www.mediafire.com/play/" .. match)
-        check("https://www.mediafire.com/listen/" .. match)
-        check("https://www.mediafire.com/watch/" .. match)
-        check("https://www.mediafire.com/download/" .. match)
-        check("https://www.mediafire.com/download.php?" .. match)
-        check("https://www.mediafire.com/imageview.php?quickkey=" .. match) -- &thumb=
-        check("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. match .. "&response_format=json")
-        check("https://www.mediafire.com/api/1.5/file/get_links.php?quick_key=" .. match .. "&response_format=json")
+        check_url_api("https://www.mediafire.com/file/" .. match)
+        check_url_api("https://www.mediafire.com/view/" .. match)
+        check_url_api("https://www.mediafire.com/play/" .. match)
+        check_url_api("https://www.mediafire.com/listen/" .. match)
+        check_url_api("https://www.mediafire.com/watch/" .. match)
+        check_url_api("https://www.mediafire.com/download/" .. match)
+        check_url_api("https://www.mediafire.com/download.php?" .. match)
+        check_url_api("https://www.mediafire.com/imageview.php?quickkey=" .. match) -- &thumb=
+        check_url_api("https://www.mediafire.com/api/1.5/file/get_info.php?quick_key=" .. match .. "&response_format=json")
+        check_url_api("https://www.mediafire.com/api/1.5/file/get_links.php?quick_key=" .. match .. "&response_format=json")
       end
     end
 
     local a, b = string.match(url, "^(https?://[^/]*mediafire%.com/api/.+%.php)%?(.+)$")
     if a and b then
       forced_allowed[a] = true
-      table.insert(urls, { url=a, post_data=b })
+      check_url_api(a, b)
     end
 
     if string.match(url, "^https?://[^/]*/file/")
       and string.match(url, "/file$") then
-      check(string.match(url, "^(.+)/file$"))
-      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1listen%2"))
-      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1view%2"))
-      check(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1watch%2"))
+      check_url_api(string.match(url, "^(.+)/file$"))
+      check_url_api(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1listen%2"))
+      check_url_api(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1view%2"))
+      check_url_api(string.gsub(url, "^(https?://[^/]*/)file(/?.+)/file$", "%1watch%2"))
     end
 
     if string.match(url, "^https?://[^/]+/api/1%.[0-9]/.")
@@ -265,7 +289,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
 
     if string.match(url, "^https?://[^/]+/api/1%.[0-9]/.")
       and string.match(html, "^{") then
-      local json = JSON:decode(html)
+      local json = cjson.decode(html)
       if not json then
         io.stdout:write("Invalid JSON response.\n")
         io.stdout:flush()
@@ -278,8 +302,8 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         j = json_get(json, "folder_info")
         if j["name"] then
           local name = string.gsub(j["name"], " ", "_")
-          check("https://www.mediafire.com/?" .. match .. "/" .. name)
-          check("https://www.mediafire.com/folder/" .. match .. "/" .. name)
+          check_url_api("https://www.mediafire.com/?" .. match .. "/" .. name)
+          check_url_api("https://www.mediafire.com/folder/" .. match .. "/" .. name)
         end
       end
 
@@ -287,13 +311,14 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         j = json_get(json, "folder_content")
         if j["more_chunks"] and j["more_chunks"] == "yes" then
           local chunk = string.match(url, "[%?&]chunk=([0-9]+)")
-          check(string.gsub(url, "([%?&]chunk=)[0-9]+", "%1" .. tostring(tonumber(chunk)+1)))
+          check_url_api(string.gsub(url, "([%?&]chunk=)[0-9]+", "%1" .. tostring(tonumber(chunk)+1)))
         end
       end
 
       if string.match(url, "/folder/get_content%.php")
         and string.match(url, "[%?&]response_format=json") then
         j = json_get(json, "folder_content")
+        local all_ids = ""
         local sort = string.match(url, "[%?&]content_type=([a-z]+)")
         if not sort then
           io.stdout:write("Could not determine sort.\n")
@@ -307,13 +332,25 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         elseif sort == "folders" then
           keyname = "folderkey"
         else
-          io.stdout:write("Sort unsupported.\n")
+          io.stdout:write("Type unsupported.\n")
           io.stdout:flush()
           abortgrab = true
           return urls
         end
         for _, d in pairs(json_get(j, sort)) do
-          discovered["id:" .. json_get(d, keyname)] = true
+          local new_id = json_get(d, keyname)
+          if sort == "folders" then
+            if string.len(all_ids) > 0 then
+              all_ids = all_ids .. "%2C"
+            end
+            all_ids = all_ids .. new_id
+          end
+          discovered["id:" .. new_id] = true
+        end
+        if sort == "folders" and string.len(all_ids) > 0 then
+          local newurl = "https://www.mediafire.com/api/1.4/folder/get_info.php"
+          forced_allowed[newurl] = true
+          check_url_api(newurl, "folder_key=" .. all_ids  .. "&details=yes&response_format=yes")
         end
       end
     end
@@ -414,37 +451,56 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   return wget.actions.NOTHING
 end
 
-
 wget.callbacks.finish = function(start_time, end_time, wall_time, numurls, total_downloaded_bytes, total_download_time)
-  local items = nil
-  for item, _ in pairs(discovered) do
-    print('found item', item)
-    if items == nil then
---      items = item
-    else
---      items = items .. "\0" .. item
-    end
-  end
-
-  if items ~= nil then
+  local function submit_backfeed(newurls, key)
     local tries = 0
-    while tries < 10 do
+    local maxtries = 10
+    while tries < maxtries do
+      if killgrab then
+        return false
+      end
       local body, code, headers, status = http.request(
-        "http://blackbird-amqp.meo.ws:23038/mediafire-db23vdgfp6gfwzx/",
-        items
+        "https://legacy-api.arpa.li/backfeed/legacy/" .. key,
+        newurls .. "\0"
       )
-      if code == 200 or code == 409 then
+      print(body)
+      if code == 200 then
+        io.stdout:write("Submitted discovered URLs.\n")
+        io.stdout:flush()
         break
       end
-      io.stdout:write("Could not queue discovered items. Sleeping...\n")
+      io.stdout:write("Failed to submit discovered URLs." .. tostring(code) .. tostring(body) .. "\n")
       io.stdout:flush()
       os.execute("sleep " .. math.floor(math.pow(2, tries)))
       tries = tries + 1
     end
-    if tries == 10 then
-      io.stdout:write("Too many tries.\n")
-      io.stdout:flush()
-      abortgrab = true
+    if tries == maxtries then
+      kill_grab()
+    end
+  end
+
+  for key, data in pairs({
+    ["mediafire-db23vdgfp6gfwzx"] = discovered
+  }) do
+    print('queuing for', string.match(key, "^(.+)%-"))--, "on shard", shard)
+    local items = nil
+    local count = 0
+    for item, _ in pairs(data) do
+      print("found item", item)
+      if items == nil then
+        items = item
+      else
+        items = items .. "\0" .. item
+      end
+      count = count + 1
+      if count == 100 then
+        submit_backfeed(items, key)
+        items = nil
+        count = 0
+      end
+    end
+    if items ~= nil then
+      submit_backfeed(items, key)
     end
   end
 end
