@@ -337,7 +337,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           abortgrab = true
           return urls
         end
+        local more_chunks = j["more_chunks"]
+        local actual_size = 0
         for _, d in pairs(json_get(j, sort)) do
+          actual_size = actual_size + 1
           local new_id = json_get(d, keyname)
           if sort == "folders" then
             if string.len(all_ids) > 0 then
@@ -346,6 +349,16 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
             all_ids = all_ids .. new_id
           end
           discovered["id:" .. new_id] = true
+        end
+        if more_chunks == "yes" then
+          local chunk_size = tonumber(j["chunk_size"])
+          assert(chunk_size == actual_size)
+          local chunk_number = tostring(tonumber(j["chunk_number"])+1)
+          if string.match(url, "[%?&]chunk=[0-9]+") then
+            check_url_api(string.gsub(url, "([%?&]chunk=)[0-9]+", "%1" .. chunk_number))
+          else
+            check_url_api(url .. "&chunk=" .. chunk_number)
+          end
         end
         if sort == "folders" and string.len(all_ids) > 0 then
           local newurl = "https://www.mediafire.com/api/1.4/folder/get_info.php"

@@ -67,7 +67,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20240313.01'
+VERSION = '20240313.02'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'legacy-api.arpa.li'
