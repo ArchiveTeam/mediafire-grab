@@ -250,6 +250,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
         check_url_api("https://www.mediafire.com/api/1.5/folder/get_content.php?content_type=files&filter=all&order_by=name&order_direction=asc&chunk=1&version=1.5&folder_key=" .. match .. "&response_format=json")
       elseif sort == "file" then
         check_url_api("https://www.mediafire.com/file/" .. match)
+        check_url_api("https://www.mediafire.com/file_premium/" .. match)
         check_url_api("https://www.mediafire.com/view/" .. match)
         check_url_api("https://www.mediafire.com/play/" .. match)
         check_url_api("https://www.mediafire.com/listen/" .. match)
