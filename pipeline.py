@@ -67,7 +67,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20241119.01'
+VERSION = '20241127.01'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -235,7 +235,7 @@ project = Project(
     title = 'mediafire',
     project_html = '''
     <img class="project-logo" alt="logo" src="https://archiveteam.org/images/thumb/8/8b/Mediafire-icon.png/320px-Mediafire-icon.png" height="50px"/>
-    <h2>mediafire.com <span class="links"><a href="https://mediafire.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/mediafire/">Leaderboard</a></span></h2>
+    <h2>mediafire.com <span class="links"><a href="https://mediafire.com/">Website</a> &middot; <a href="https://tracker.archiveteam.org/mediafire/">Leaderboard</a></span></h2>
     '''
 )
 
@@ -270,7 +270,7 @@ pipeline = Pipeline(
         name='shared:rsync_threads', title='Rsync threads',
         description='The maximum number of concurrent uploads.'),
         UploadWithTracker(
-            'http://%s/%s' % (TRACKER_HOST, TRACKER_ID),
+            'https://%s/%s' % (TRACKER_HOST, TRACKER_ID),
             downloader=downloader,
             version=VERSION,
             files=[
@@ -287,7 +287,7 @@ pipeline = Pipeline(
         ),
     ),
     SendDoneToTracker(
-        tracker_url='http://%s/%s' % (TRACKER_HOST, TRACKER_ID),
+        tracker_url='https://%s/%s' % (TRACKER_HOST, TRACKER_ID),
         stats=ItemValue('stats')
     )
 )
