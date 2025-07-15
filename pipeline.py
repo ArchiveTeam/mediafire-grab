@@ -67,7 +67,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20250715.01'
+VERSION = '20250715.02'
 USER_AGENT = 'Archive Team'
 TRACKER_ID = 'mediafire'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -203,7 +203,7 @@ class WgetArgs(object):
             '--warc-header', 'mediafire-dld-script-version: ' + VERSION,
             '--warc-header', ItemInterpolation('mediafire-item: %(item_name)s'),
             '--warc-dedup-url-agnostic',
-            '--warc-tempdir', ItemInterpolation('%(item_dir)s'),
+            #'--warc-tempdir', ItemInterpolation('%(item_dir)s'),
         ]
 
         item_name = item['item_name']
